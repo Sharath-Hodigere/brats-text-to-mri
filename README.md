@@ -1,70 +1,47 @@
-# Getting Started with Create React App
+# Text-to-MRI Generation using BERT + 3D CNN
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project generates synthetic 3D brain MRI volumes from radiological text descriptions. You give it a clinical finding like "mass-like signal in the left frontal lobe with strong enhancement" and it outputs a 128x128x128 NIfTI volume.
 
-## Available Scripts
+Built on the BraTS Meningioma dataset. Trained on a remote Linux server over SSH using a conda environment.
 
-In the project directory, you can run:
+## How it works
 
-### `npm start`
+- **Text encoder**: BERT (bert-base-uncased) frozen, using the CLS token embedding
+- **Decoder**: 4-stage 3D transposed convolution network, 8 cube up to 128 cube
+- **Loss**: L1 + gradient edge loss weighted at 0.5
+- **Output**: .nii.gz volume + 2D middle-slice PNG
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Setup
+```bash
+conda create -n text2mri python=3.10
+conda activate text2mri
+pip install -r requirements.txt
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Training
+```bash
+python train_ddp.py
+```
 
-### `npm test`
+Saves best checkpoint to text_to_mri_model_128.pth. Ran 200 epochs.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Inference
 
-### `npm run build`
+Edit the text variable in inference.py then run:
+```bash
+python inference.py
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Outputs generated_128.png and generated_128_volume.nii.gz
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Result
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+![Generated MRI](generated_128.png)
 
-### `npm run eject`
+## Files
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+| File | Description |
+|------|-------------|
+| train_ddp.py | Dataset, model, training loop |
+| inference.py | Generate MRI volume from text |
+| requirements.txt | Dependencies |
